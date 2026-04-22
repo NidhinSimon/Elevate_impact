@@ -199,11 +199,24 @@ export default function SignupPage() {
                   onClick={handleGoogleSignup}
                   className="flex items-center justify-center gap-3 py-3 px-4 bg-surface-container-low rounded-xl border border-transparent hover:border-gray-200 hover:bg-white transition-all group shadow-sm hover:shadow-md"
                 >
-                  <img
-                    alt="Google"
-                    className="w-5 h-5 grayscale group-hover:grayscale-0 transition-all opacity-80 group-hover:opacity-100"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuB7ab3EycvjPeKUhDd9U3OGiofHxdUduk3c_O4XG8KpqxvSzRTQ38aon414pvjhsUjNo99NBHSRcLdSbvgNqTKEhGr4smD_2EsmRHSERRDcKp1WNRIGiNtMatU7LtIGOI-dG4evr9C57eXO4i9iu6IgZ47SDeTWaX54OVQkidcZIEshGdkKWEF12gyvIIY7vpGDmmat6vWC7R9ClpJSI6BR1CT7iQnYu-1LyvwAhFKnU9FuEer9g5mNX9p_GBwEMUknwT7yINNyYO7-"
-                  />
+                  <svg className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" viewBox="0 0 24 24">
+                    <path
+                      fill="#EA4335"
+                      d="M5.26620003,9.76451641 L2.29961433,7.4600551 C3.85904185,4.33789809 7.05675846,2.22222222 10.7407407,2.22222222 C13.0760181,2.22222222 15.2044739,3.06697622 16.8524183,4.45703622 L13.6825105,7.62694401 C12.8554457,6.93330366 11.8396016,6.51851852 10.7407407,6.51851852 C8.40461313,6.51851852 6.42852789,7.91652432 5.58992288,9.8897651 L5.26620003,9.76451641 Z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M10.7407407,18.962963 C8.40461313,18.962963 6.42852789,17.5649572 5.58992288,15.5917164 L2.29961433,17.8961777 C3.85904185,21.0183347 7.05675846,23.1338889 10.7407407,23.1338889 C11.8033947,23.1338889 12.8173404,22.7303317 13.6069502,22.0531715 L10.7407407,18.962963 Z"
+                    />
+                    <path
+                      fill="#4285F4"
+                      d="M22.6103396,12.398514 C22.6103396,11.6351056 22.5486517,10.9004512 22.4338903,10.1851852 L10.7407407,10.1851852 L10.7407407,14.4814815 L17.3916203,14.4814815 C17.1044407,16.0319121 16.230291,17.3415644 14.9123242,18.2212627 L17.7785337,21.3114711 C19.4563299,19.763354 22.6103396,16.3986378 22.6103396,12.398514 Z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M5.58992288,15.5917164 C5.36531394,14.9213854 5.24074074,14.2055611 5.24074074,13.462963 C5.24074074,12.7203648 5.36531394,12.0045405 5.58992288,13.3342095 L2.29961433,11.0297482 C1.59330853,12.4412543 1.18518519,14.0270836 1.18518519,15.7037037 C1.18518519,17.3803238 1.59330853,18.9661531 2.29961433,20.3776592 L5.58992288,18.0731979 Z"
+                    />
+                  </svg>
                   <span className="text-sm font-bold text-text-main">Continue with Google</span>
                 </button>
               </div>
