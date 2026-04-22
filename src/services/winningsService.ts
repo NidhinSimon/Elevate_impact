@@ -10,14 +10,27 @@ export interface Winning {
   user_id: string;
   draw_id: string;
   amount: number;
-  status: WinningStatus;
-  proof_url: string | null;
+  match_count: number;
+  tier: string;
+  status: string;
+  proof_url?: string;
   created_at: string;
-  updated_at: string;
-  user?: {
+  profiles?: {
     email: string;
     full_name?: string;
   };
+}
+
+export interface WinnerVerification {
+  id: string;
+  user_id: string;
+  draw_id: string;
+  proof_url: string;
+  status: 'pending' | 'approved' | 'rejected';
+  payout_status: 'pending' | 'paid';
+  submitted_at: string;
+  reviewed_at?: string;
+  admin_notes?: string;
 }
 
 export const winningsService = {
@@ -49,6 +62,15 @@ export const winningsService = {
     return data as (Winning & { profiles: { email: string } })[];
   },
 
+  async updateStatus(id: string, status: string) {
+    const { error } = await supabase
+      .from('winnings')
+      .update({ status })
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+
 
   async uploadProof(winningId: string, file: File) {
     const fileExt = file.name.split('.').pop();
@@ -74,15 +96,66 @@ export const winningsService = {
     return publicUrl;
   },
 
-  async updateStatus(winningId: string, status: WinningStatus) {
+  async getVerifications(winningId: string) {
     const { data, error } = await supabase
-      .from('winnings')
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq('id', winningId)
-      .select()
-      .single();
+      .from('winner_verifications')
+      .select('*')
+      .eq('draw_id', winningId)
+      .order('submitted_at', { ascending: false });
+    
+    if (error) throw error;
+    return data as WinnerVerification[];
+  },
+
+  async submitVerification(userId: string, drawId: string, file: File) {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${userId}-${drawId}-${Math.random()}.${fileExt}`;
+    const filePath = `verifications/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('winner-proofs')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('winner-proofs')
+      .getPublicUrl(filePath);
+
+    const { error: insertError } = await supabase
+      .from('winner_verifications')
+      .insert({
+        user_id: userId,
+        draw_id: drawId,
+        proof_url: publicUrl,
+        status: 'pending',
+        payout_status: 'pending'
+      });
+
+    if (insertError) throw insertError;
+    return publicUrl;
+  },
+
+  async updateVerificationStatus(id: string, status: 'approved' | 'rejected', notes?: string) {
+    const { error } = await supabase
+      .from('winner_verifications')
+      .update({ 
+        status, 
+        admin_notes: notes,
+        reviewed_at: new Date().toISOString(),
+        payout_status: status === 'approved' ? 'pending' : 'pending' 
+      })
+      .eq('id', id);
 
     if (error) throw error;
-    return data;
+  },
+
+  async markAsPaid(id: string) {
+    const { error } = await supabase
+      .from('winner_verifications')
+      .update({ payout_status: 'paid' })
+      .eq('id', id);
+
+    if (error) throw error;
   }
 };

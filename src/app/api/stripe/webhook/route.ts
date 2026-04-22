@@ -1,21 +1,18 @@
-import { createClient } from "@supabase/supabase-js";
 import { headers } from "next/headers";
+import { getStripeServerClient, syncDonationCheckout, syncSubscriptionCheckout } from "@/lib/stripe-sync";
+import { toIsoStringSafe } from "@/lib/date";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-02-24-preview",
-});
+const stripe = getStripeServerClient();
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
-// Use service role to bypass RLS for background updates
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function POST(req: Request) {
+  if (!stripe || !webhookSecret) {
+    return NextResponse.json({ error: "Stripe webhook is not configured" }, { status: 500 });
+  }
+
   const body = await req.text();
   const signature = (await headers()).get("stripe-signature") as string;
 
@@ -32,30 +29,24 @@ export async function POST(req: Request) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        const userId = session.metadata?.userId;
-        const subscriptionId = session.subscription as string;
-        
-        if (userId) {
-          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-          
-          const { error } = await supabaseAdmin
-            .from("profiles")
-            .update({
-              subscription_status: "active",
-              subscription_tier: subscription.items.data[0].price.id === process.env.STRIPE_MONTHLY_PRICE_ID ? "monthly" : "yearly",
-              renewal_date: new Date(subscription.current_period_end * 1000).toISOString(),
-              stripe_customer_id: session.customer as string,
-              stripe_subscription_id: subscriptionId,
-            })
-            .eq("id", userId);
-            
-          if (error) throw error;
+
+        if (session.metadata?.kind === "subscription") {
+          await syncSubscriptionCheckout(session);
         }
+
+        if (session.metadata?.kind === "donation" && session.payment_status === "paid") {
+          await syncDonationCheckout(session);
+        }
+
         break;
       }
 
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
+        const supabaseAdmin = (await import("@supabase/supabase-js")).createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co",
+          process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder"
+        );
         await supabaseAdmin
           .from("profiles")
           .update({ subscription_status: "cancelled" })
@@ -64,20 +55,36 @@ export async function POST(req: Request) {
       }
 
       case "invoice.payment_failed": {
-        const invoice = event.data.object as Stripe.Invoice;
+        const invoice = event.data.object as Stripe.Invoice & {
+          subscription?: string | Stripe.Subscription | null;
+        };
+        const supabaseAdmin = (await import("@supabase/supabase-js")).createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co",
+          process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder"
+        );
         await supabaseAdmin
           .from("profiles")
           .update({ subscription_status: "lapsed" })
-          .eq("stripe_subscription_id", invoice.subscription as string);
+          .eq("stripe_subscription_id", typeof invoice.subscription === "string" ? invoice.subscription : invoice.subscription?.id);
         break;
       }
 
       case "customer.subscription.updated": {
-        const subscription = event.data.object as Stripe.Subscription;
+        const subscription = event.data.object as Stripe.Subscription & {
+          current_period_end: number;
+        };
+        const supabaseAdmin = (await import("@supabase/supabase-js")).createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co",
+          process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder"
+        );
+        const billing = subscription.metadata?.billing || (subscription.items.data[0]?.price.recurring?.interval === "year" ? "yearly" : "monthly");
         await supabaseAdmin
           .from("profiles")
           .update({ 
-            renewal_date: new Date(subscription.current_period_end * 1000).toISOString() 
+            subscription_status: subscription.status === "active" || subscription.status === "trialing" ? "active" : "lapsed",
+            subscription_period: billing,
+            subscription_tier: billing,
+            renewal_date: toIsoStringSafe(subscription.current_period_end * 1000),
           })
           .eq("stripe_subscription_id", subscription.id);
         break;

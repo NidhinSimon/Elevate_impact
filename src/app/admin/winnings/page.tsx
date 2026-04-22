@@ -19,7 +19,7 @@ import { useEffect, useState } from "react";
 import { winningsService, Winning, WinningStatus } from "@/services/winningsService";
 
 export default function AdminWinnings() {
-  const [winnings, setWinnings] = useState<(Winning & { user: { email: string } })[]>([]);
+  const [winnings, setWinnings] = useState<(Winning & { profiles: { email: string } })[]>([]);
   const [loading, setLoading] = useState(true);
   const [actioning, setActioning] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -47,9 +47,9 @@ export default function AdminWinnings() {
       
       if (status === 'paid') {
         const winning = winnings.find(w => w.id === id);
-        if (winning?.user?.email) {
+        if (winning?.profiles?.email) {
           const { emailService } = await import("@/services/emailService");
-          await emailService.sendPayoutConfirmed(winning.user.email, winning.amount);
+          await emailService.sendPayoutConfirmed(winning.profiles.email, winning.amount);
         }
       }
       
@@ -70,7 +70,8 @@ export default function AdminWinnings() {
   }
 
   const filteredWinnings = winnings.filter(w => {
-    const matchesSearch = w.user?.email.toLowerCase().includes(search.toLowerCase()) || w.draw_id.toLowerCase().includes(search.toLowerCase());
+    const email = w.profiles?.email || "";
+    const matchesSearch = email.toLowerCase().includes(search.toLowerCase()) || w.draw_id.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === "All Statuses" || w.status === statusFilter.toLowerCase();
     return matchesSearch && matchesStatus;
   });
@@ -173,11 +174,11 @@ export default function AdminWinnings() {
                           <td className="px-10 py-8">
                              <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 rounded-full bg-indigo-900 flex items-center justify-center text-white font-black text-sm">
-                                   {w.user?.email.substring(0, 2).toUpperCase()}
+                                   {(w.profiles?.email || "?").substring(0, 2).toUpperCase()}
                                 </div>
                                 <div>
-                                   <p className="font-bold text-[#0F0A4A]">{w.user?.email.split('@')[0]}</p>
-                                   <p className="text-xs text-slate-400 font-medium">{w.user?.email}</p>
+                                   <p className="font-bold text-[#0F0A4A]">{(w.profiles?.email || "Unknown").split('@')[0]}</p>
+                                   <p className="text-xs text-slate-400 font-medium">{w.profiles?.email || "No email"}</p>
                                 </div>
                              </div>
                           </td>

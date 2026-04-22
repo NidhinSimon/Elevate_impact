@@ -39,8 +39,8 @@ export default function DashboardSidebar() {
 
 
   return (
-    <aside className="hidden lg:flex flex-col sticky top-32 h-[calc(100vh-160px)] space-y-3 overflow-y-auto scrollbar-hide pb-10">
-      <div className="flex-1 space-y-2 mt-4">
+    <aside className="hidden lg:flex flex-col sticky top-32 h-fit w-64">
+      <div className="flex-1 space-y-3 mt-4">
         {links.map((link) => {
           const Icon = link.icon;
           const isActive = pathname === link.href;
@@ -48,13 +48,18 @@ export default function DashboardSidebar() {
             <Link
               key={link.href}
               href={link.href}
-              className={`flex items-center gap-4 px-5 py-4 rounded-2xl transition-all font-bold text-sm ${isActive
-                  ? "bg-white shadow-md text-primary border border-slate-100/50"
-                  : "text-slate-400 hover:text-primary hover:bg-white/50"
+              className={`flex items-center gap-4 px-6 py-5 rounded-[24px] transition-all duration-500 font-black text-sm group relative ${isActive
+                  ? "bg-white shadow-2xl shadow-primary/5 text-primary border border-slate-100 translate-x-2"
+                  : "text-slate-400 hover:text-primary hover:bg-white/40"
                 }`}
             >
-              <Icon size={20} className={isActive ? "text-primary" : "text-slate-300"} />
-              <span>{link.label}</span>
+              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500 ${isActive ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-slate-50 text-slate-300 group-hover:bg-primary/5 group-hover:text-primary'}`}>
+                <Icon size={20} />
+              </div>
+              <span className="tracking-tight">{link.label}</span>
+              {isActive && (
+                <div className="absolute left-[-8px] w-1.5 h-6 bg-secondary-light rounded-full shadow-lg shadow-secondary-light/40 animate-in slide-in-from-left-2 duration-500" />
+              )}
             </Link>
           );
         })}

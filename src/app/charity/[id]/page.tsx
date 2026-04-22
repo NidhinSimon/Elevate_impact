@@ -18,13 +18,17 @@ import {
   Calendar,
   Share2
 } from "lucide-react";
+import { toast } from "react-hot-toast";
+import { useAuth } from "@/components/auth-provider";
 
 export default function CharityDetail() {
   const { id } = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const [charity, setCharity] = useState<Charity | null>(null);
   const [loading, setLoading] = useState(true);
   const [donationAmount, setDonationAmount] = useState(100);
+  const [isDonating, setIsDonating] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -34,6 +38,54 @@ export default function CharityDetail() {
       });
     }
   }, [id]);
+
+  useEffect(() => {
+    if (!id || typeof window === "undefined") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const donationState = params.get("donation");
+    const sessionId = params.get("session_id");
+
+    if (donationState !== "success" || !sessionId) {
+      if (donationState === "cancelled") {
+        toast.error("Donation checkout was canceled.");
+        router.replace(`/charity/${id}`);
+      }
+      return;
+    }
+
+    const verifyDonation = async () => {
+      const loadingToast = toast.loading("Confirming your donation...");
+
+      try {
+        const res = await fetch("/api/stripe/verify-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || "We couldn't confirm your donation yet.");
+        }
+
+        const fresh = await charityService.getCharityById(id as string);
+        if (fresh) {
+          setCharity(fresh);
+        }
+
+        toast.success("Donation received. Thank you for supporting this mission.", { id: loadingToast });
+      } catch (err: any) {
+        toast.error(err.message || "Donation verification failed.", { id: loadingToast });
+      } finally {
+        router.replace(`/charity/${id}`);
+      }
+    };
+
+    void verifyDonation();
+  }, [id, router]);
 
   if (loading) {
     return (
@@ -206,9 +258,66 @@ export default function CharityDetail() {
                           ))}
                        </div>
 
-                       <button className="w-full py-6 bg-[#1A146B] text-white rounded-[24px] font-black text-sm flex items-center justify-center gap-3 shadow-xl shadow-indigo-900/20 hover:scale-[1.02] transition-all group">
-                          <Heart size={20} className="group-hover:fill-white transition-all" /> Support with ${donationAmount}
-                       </button>
+                        <button 
+                          onClick={async () => {
+                            if (donationAmount < 5) {
+                              toast.error("Minimum donation is $5");
+                              return;
+                            }
+                            setIsDonating(true);
+                            const t = toast.loading("Preparing secure donation...");
+                            try {
+                              const res = await fetch("/api/checkout-one-time", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  amount: donationAmount,
+                                  charityId: charity.id,
+                                  charityName: charity.name,
+                                  userId: user?.id,
+                                  userEmail: user?.email
+                                })
+                              });
+                              const data = await res.json();
+
+                              if (!res.ok) {
+                                throw new Error(data.error || "Failed to create donation checkout");
+                              }
+                              
+                              if (data.isMock) {
+                                // Simulate recording the donation
+                                await fetch("/api/donations", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({
+                                    amount: donationAmount,
+                                    charityId: charity.id,
+                                    userId: user?.id,
+                                    stripePaymentIntentId: data.clientSecret
+                                  })
+                                });
+                                toast.success("Donation successful! (Demo Mode)", { id: t });
+                                // Refresh charity data
+                                const fresh = await charityService.getCharityById(id as string);
+                                if (fresh) setCharity(fresh);
+                              } else {
+                                toast.success("Redirecting to secure payment...", { id: t });
+                                if (data.url) {
+                                  window.location.href = data.url;
+                                }
+                              }
+                            } catch (err: any) {
+                              toast.error(err.message || "Failed to initiate donation", { id: t });
+                            } finally {
+                              setIsDonating(false);
+                            }
+                          }}
+                          disabled={isDonating}
+                          className="w-full py-6 bg-[#1A146B] text-white rounded-[24px] font-black text-sm flex items-center justify-center gap-3 shadow-xl shadow-indigo-900/20 hover:scale-[1.02] transition-all group disabled:opacity-50"
+                        >
+                          {isDonating ? <Loader2 className="animate-spin" /> : <Heart size={20} className="group-hover:fill-white transition-all" />}
+                          Support with ${donationAmount}
+                        </button>
 
 
                        <div className="flex items-center justify-center gap-2 pt-4 opacity-40">

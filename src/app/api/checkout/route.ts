@@ -25,6 +25,17 @@ export async function POST(req: Request) {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount * 100,
       currency: "usd",
+      description: `Elevate Impact ${planId} Subscription - User: ${userId}`,
+      shipping: {
+        name: "Elevate Impact User",
+        address: {
+          line1: "123 Impact Way",
+          city: "Mumbai",
+          state: "MH",
+          postal_code: "400001",
+          country: "IN",
+        },
+      },
       automatic_payment_methods: { enabled: true },
       metadata: { planId, userId },
     });

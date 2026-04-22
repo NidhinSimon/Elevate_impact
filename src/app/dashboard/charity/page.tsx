@@ -5,12 +5,12 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/components/auth-provider";
 import { useState, useEffect } from "react";
-import { 
-  Heart, 
-  Search, 
-  Check, 
-  ChevronRight, 
-  Loader2, 
+import {
+  Heart,
+  Search,
+  Check,
+  ChevronRight,
+  Loader2,
   Info,
   Globe,
   Award
@@ -53,7 +53,7 @@ export default function CharityPreferencesPage() {
           .select('selected_charity_id, charity_contribution_percentage')
           .eq('id', user.id)
           .single();
-        
+
         if (profileData) {
           setProfile(profileData);
           setSelectedId(profileData.selected_charity_id);
@@ -92,8 +92,8 @@ export default function CharityPreferencesPage() {
     }
   };
 
-  const filteredCharities = charities.filter(c => 
-    c.name.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredCharities = charities.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.category.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -107,10 +107,10 @@ export default function CharityPreferencesPage() {
       <Navbar />
 
       <main className="pt-32 pb-24 max-w-[1440px] mx-auto px-10">
-        <div className="grid lg:grid-cols-[280px_1fr] gap-20">
+        <div className="grid lg:grid-cols-[280px_1fr] gap-16">
           <DashboardSidebar />
 
-          <div className="space-y-12">
+          <div className="bg-white rounded-[48px] p-12 shadow-2xl shadow-primary/5 space-y-12 border border-slate-100">
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div>
                 <h1 className="text-[44px] font-extrabold text-primary mb-2 tracking-tight">Impact Partners</h1>
@@ -118,7 +118,7 @@ export default function CharityPreferencesPage() {
               </div>
               <div className="relative w-full md:w-80">
                 <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-text-muted/30" size={18} />
-                <input 
+                <input
                   type="text"
                   placeholder="Search mission..."
                   value={search}
@@ -134,11 +134,10 @@ export default function CharityPreferencesPage() {
                 <button
                   key={charity.id}
                   onClick={() => setSelectedId(charity.id)}
-                  className={`group relative p-8 rounded-[40px] bg-white border transition-all duration-500 text-left hover:shadow-2xl hover:shadow-primary/5 ${
-                    selectedId === charity.id 
-                    ? 'border-accent ring-4 ring-accent/10 shadow-xl shadow-accent/5' 
-                    : 'border-slate-100'
-                  }`}
+                  className={`group relative p-8 rounded-[40px] bg-white border transition-all duration-500 text-left hover:shadow-2xl hover:shadow-primary/5 ${selectedId === charity.id
+                      ? 'border-accent ring-4 ring-accent/10 shadow-xl shadow-accent/5'
+                      : 'border-slate-100'
+                    }`}
                 >
                   {selectedId === charity.id && (
                     <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-accent flex items-center justify-center text-primary shadow-lg shadow-accent/20">
@@ -174,7 +173,7 @@ export default function CharityPreferencesPage() {
             {/* Contribution Panel */}
             <section className="bg-primary rounded-[48px] p-12 text-white relative overflow-hidden shadow-2xl shadow-primary/20">
               <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/10 blur-[100px] -mr-32 -mt-32 pointer-events-none" />
-              
+
               <div className="relative z-10 grid lg:grid-cols-[1fr_400px] gap-16 items-center">
                 <div className="space-y-8">
                   <div className="flex items-center gap-4">
@@ -189,8 +188,8 @@ export default function CharityPreferencesPage() {
                       <p className="text-primary-muted font-bold">Your contribution: <span className="text-white text-xl font-black">{percentage}%</span> of subscription</p>
                       <span className="text-xs font-black text-accent uppercase tracking-widest">Min locked at 10%</span>
                     </div>
-                    
-                    <input 
+
+                    <input
                       type="range"
                       min="10"
                       max="100"
@@ -203,7 +202,7 @@ export default function CharityPreferencesPage() {
                     <div className="flex items-center gap-4 p-6 bg-white/5 rounded-3xl border border-white/5">
                       <Award className="text-accent" size={32} />
                       <p className="text-sm font-medium leading-relaxed">
-                        You contribute <span className="text-accent font-black">£{monthlyContribution}</span> per month to 
+                        You contribute <span className="text-accent font-black">${monthlyContribution}</span> per month to
                         <span className="text-white font-black"> {selectedCharity?.name || 'your chosen mission'}</span>.
                       </p>
                     </div>
@@ -218,7 +217,7 @@ export default function CharityPreferencesPage() {
                     <p className="text-sm font-medium text-primary-muted leading-relaxed mb-8">
                       By choosing a higher contribution, you unlock exclusive Impact Tier rewards and personalized reports on your funding progress.
                     </p>
-                    <button 
+                    <button
                       onClick={handleSave}
                       disabled={saving}
                       className="w-full py-5 bg-accent text-primary rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-accent/20 disabled:opacity-50"

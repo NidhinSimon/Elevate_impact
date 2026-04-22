@@ -2,142 +2,171 @@
 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Check, Loader2, Zap, Trophy } from "lucide-react";
+import { Check, Zap, Trophy, Star, ArrowRight } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
-import { useAuth } from "@/components/auth-provider";
-import { toast } from "react-hot-toast";
+import { motion } from "framer-motion";
+
+const plans = [
+  {
+    id: "silver",
+    name: "Silver Impact",
+    price: { monthly: 19, yearly: 180 },
+    features: [
+      "1 Monthly Draw Entry",
+      "Basic Performance Tracking",
+      "10% Charity Allocation",
+      "Impact Badge",
+      "Email Support"
+    ],
+    color: "#6b7280", // Slate
+    icon: Star,
+    popular: false
+  },
+  {
+    id: "gold",
+    name: "Gold Champion",
+    price: { monthly: 49, yearly: 470 },
+    features: [
+      "3 Monthly Draw Entries",
+      "Advanced Analytics Dashboard",
+      "10% Charity Allocation",
+      "Verified Athlete Status",
+      "Priority Verification",
+      "Member-Only Community"
+    ],
+    color: "#68dba9", // Mint
+    icon: Trophy,
+    popular: true
+  },
+  {
+    id: "elite",
+    name: "Elite Visionary",
+    price: { monthly: 99, yearly: 950 },
+    features: [
+      "10 Monthly Draw Entries",
+      "Exclusive Impact Map Access",
+      "20% Charity Allocation",
+      "1-on-1 Performance Coaching",
+      "VIP Event Access",
+      "Legacy Impact Reporting",
+      "Direct Founder Access"
+    ],
+    color: "#4f46e5", // Indigo
+    icon: Zap,
+    popular: false
+  }
+];
 
 export default function SubscribePage() {
-  const { user } = useAuth();
-  const [loading, setLoading] = useState<string | null>(null);
-
-  const handleSubscribe = async (priceId: string, planType: string) => {
-    if (!user) {
-      toast.error("Please log in to subscribe");
-      return;
-    }
-
-    setLoading(planType);
-    try {
-      const res = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId, userId: user.id }),
-      });
-
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error(data.error || "Checkout failed");
-      }
-    } catch (err: any) {
-      toast.error(err.message);
-      setLoading(null);
-    }
-  };
-
-  const plans = [
-    {
-      type: "monthly",
-      title: "Impact Monthly",
-      price: process.env.NEXT_PUBLIC_MONTHLY_PRICE || "£9.99",
-      priceId: process.env.NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID!,
-      features: [
-        "10 Official Draw Entries",
-        "Personal Impact Dashboard",
-        "Select 1 Primary Charity",
-        "Monthly Performance Reports",
-        "Community Access"
-      ],
-      icon: Zap,
-      color: "from-blue-500/20 to-indigo-500/20"
-    },
-    {
-      type: "yearly",
-      title: "Elevated Yearly",
-      price: process.env.NEXT_PUBLIC_YEARLY_PRICE || "£89.99",
-      priceId: process.env.NEXT_PUBLIC_STRIPE_YEARLY_PRICE_ID!,
-      features: [
-        "120 Official Draw Entries",
-        "Founding Member Badge",
-        "Select up to 3 Charities",
-        "Real-time Impact Map",
-        "Priority Claim Processing",
-        "Save 25% annually"
-      ],
-      icon: Trophy,
-      badge: "Best Value",
-      color: "from-emerald-500/20 to-teal-500/20"
-    }
-  ];
+  const [isYearly, setIsYearly] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#faf8ff] font-sans overflow-x-hidden text-primary">
       <Navbar />
-      
-      <main className="pt-32 pb-24 max-w-7xl mx-auto px-6">
-        <div className="text-center mb-16 space-y-4">
-          <h1 className="text-5xl font-black text-primary tracking-tight">Unlock Your Impact</h1>
+
+      <main className="pt-32 pb-48 max-w-7xl mx-auto px-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16 space-y-4"
+        >
+          <p className="text-xs font-black uppercase tracking-[0.25em] text-primary/60 mb-2">Activation Required</p>
+          <h1 className="text-5xl md:text-7xl font-black text-primary tracking-tight leading-[1.1]">
+            Unlock Your <span className="text-secondary-light">Impact</span>
+          </h1>
           <p className="text-xl text-text-muted font-medium max-w-2xl mx-auto">
-            Choose a plan to start logging your performance and funding global change. 
-            Every subscription fuels our mission.
+            Your account is ready. Choose a membership plan to activate your dashboard and start funding global change.
           </p>
-        </div>
+        </motion.div>
 
-        <div className="grid md:grid-cols-2 gap-10 max-w-5xl mx-auto">
-          {plans.map((plan) => (
-            <div 
-              key={plan.type}
-              className="relative group bg-white rounded-[40px] p-10 border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden"
+        {/* Billing Toggle */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.6 }}
+          className="flex items-center justify-center gap-6 mb-16"
+        >
+          <span className={`text-sm font-bold transition-colors ${!isYearly ? 'text-primary' : 'text-slate-400'}`}>Monthly</span>
+          <button
+            onClick={() => setIsYearly(!isYearly)}
+            className={`w-14 h-7 rounded-full p-1 relative transition-all duration-300 ${isYearly ? 'bg-secondary-light' : 'bg-slate-200'}`}
+          >
+            <motion.div 
+              animate={{ x: isYearly ? 28 : 0 }}
+              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+              className={`w-5 h-5 rounded-full shadow-md ${isYearly ? 'bg-white' : 'bg-primary'}`} 
+            />
+          </button>
+          <span className={`text-sm font-bold transition-colors ${isYearly ? 'text-primary' : 'text-slate-400'}`}>
+            Yearly <span className="ml-2 text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-secondary-light/10 text-secondary-light rounded-md animate-pulse">Save 20%</span>
+          </span>
+        </motion.div>
+
+        {/* Pricing Grid */}
+        <div className="grid lg:grid-cols-3 gap-8 items-stretch">
+          {plans.map((plan, index) => (
+            <motion.div
+              key={plan.id}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 + index * 0.1, duration: 0.6 }}
+              className={`relative rounded-[48px] p-10 flex flex-col transition-all duration-500 hover:-translate-y-2 group ${plan.popular ? 'bg-primary text-white shadow-2xl shadow-primary/20 border-none min-h-[640px]' : 'bg-white text-primary border border-slate-100 shadow-sm min-h-[640px]'}`}
             >
-              <div className={`absolute top-0 right-0 w-64 h-64 bg-gradient-to-br ${plan.color} blur-[80px] -mr-32 -mt-32 opacity-50 group-hover:opacity-100 transition-opacity`} />
-              
-              {plan.badge && (
-                <div className="absolute top-8 right-8 px-4 py-1.5 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-emerald-500/20">
-                  {plan.badge}
-                </div>
+              {plan.popular && (
+                <div className="absolute top-0 right-0 w-64 h-64 bg-secondary-light/5 blur-[100px] -mr-32 -mt-32 rounded-full pointer-events-none" />
               )}
-
-              <div className="relative z-10">
-                <div className="w-16 h-16 rounded-3xl bg-slate-50 flex items-center justify-center mb-8">
-                  <plan.icon className="text-primary" size={32} />
+              
+              <div className="flex justify-between items-start mb-8 relative z-10">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${plan.popular ? 'bg-white/10 text-secondary-light' : 'bg-slate-50 text-primary'}`}>
+                  <plan.icon size={28} />
                 </div>
-
-                <h3 className="text-2xl font-black text-primary mb-2">{plan.title}</h3>
-                <div className="flex items-baseline gap-1 mb-8">
-                  <span className="text-5xl font-black text-primary">{plan.price}</span>
-                  <span className="text-text-muted font-bold">/{plan.type === 'monthly' ? 'mo' : 'yr'}</span>
-                </div>
-
-                <ul className="space-y-4 mb-12">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-3 text-slate-600 font-medium">
-                      <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                        <Check size={12} className="text-emerald-600" strokeWidth={4} />
-                      </div>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-
-                <button
-                  onClick={() => handleSubscribe(plan.priceId, plan.type)}
-                  disabled={!!loading}
-                  className="w-full py-5 bg-accent text-primary rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100"
-                >
-                  {loading === plan.type ? (
-                    <Loader2 className="animate-spin mx-auto" />
-                  ) : (
-                    `Subscribe ${plan.type === 'monthly' ? 'Monthly' : 'Yearly'}`
-                  )}
-                </button>
+                {plan.popular && (
+                  <span className="px-4 py-1.5 bg-secondary-light text-primary text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-secondary-light/20">Most Popular</span>
+                )}
               </div>
-            </div>
+
+              <h3 className="text-2xl font-black mb-2 relative z-10">{plan.name}</h3>
+              <div className="flex items-baseline gap-1 mb-8 relative z-10">
+                <span className="text-5xl font-black leading-none">
+                  ${isYearly ? plan.price.yearly : plan.price.monthly}
+                </span>
+                <span className="text-sm font-bold opacity-60">/{isYearly ? 'yr' : 'mo'}</span>
+              </div>
+
+              <div className="space-y-4 mb-10 flex-1 relative z-10">
+                {plan.features.map((feature) => (
+                  <div key={feature} className="flex items-center gap-3 text-sm font-medium">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${plan.popular ? 'bg-secondary-light/20 text-secondary-light' : 'bg-secondary-light/10 text-secondary-light'}`}>
+                      <Check size={12} strokeWidth={4} />
+                    </div>
+                    <span className="opacity-80">{feature}</span>
+                  </div>
+                ))}
+              </div>
+
+              <Link
+                href={`/checkout?plan=${plan.id}&billing=${isYearly ? 'yearly' : 'monthly'}`}
+                className={`inline-flex items-center justify-center px-8 py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all group-hover:scale-[1.02] active:scale-[0.98] ${plan.popular ? 'bg-secondary-light text-primary shadow-xl shadow-secondary-light/20' : 'bg-primary text-white shadow-xl shadow-primary/10'}`}
+              >
+                Choose {plan.name} <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </motion.div>
           ))}
         </div>
+
+        {/* Bottom Notice */}
+        <motion.p 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+          className="mt-16 text-center text-sm font-bold text-slate-400 uppercase tracking-widest opacity-60"
+        >
+          Secure Payment via Stripe • Cancel Anytime • 24/7 Support
+        </motion.p>
       </main>
-      
+
       <Footer />
     </div>
   );

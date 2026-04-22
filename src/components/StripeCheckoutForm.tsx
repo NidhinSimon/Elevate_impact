@@ -39,7 +39,8 @@ export default function StripeCheckoutForm({ amount, onSuccess }: CheckoutFormPr
       if (error.type === "card_error" || error.type === "validation_error") {
         toast.error(error.message!);
       } else {
-        toast.error("An unexpected error occurred.");
+        toast.error(error.message || "An unexpected error occurred.");
+        console.error("[STRIPE ERROR]", error);
       }
     } else if (paymentIntent && paymentIntent.status === "succeeded") {
       toast.success("Payment successful!");
@@ -52,8 +53,24 @@ export default function StripeCheckoutForm({ amount, onSuccess }: CheckoutFormPr
 
   return (
     <form id="payment-form" onSubmit={handleSubmit} className="space-y-8">
+      <div className="flex items-center gap-3 px-4 py-2 bg-amber-50 rounded-xl border border-amber-100/50 w-fit mb-4">
+        <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
+        <span className="text-[9px] font-black uppercase tracking-widest text-amber-700">Demo Card: 4242 4242 4242 4242</span>
+      </div>
       <div className="p-6 rounded-3xl bg-indigo-50/30 border border-indigo-100/50 mb-8">
-        <PaymentElement id="payment-element" options={{ layout: "tabs" }} />
+        <PaymentElement 
+          id="payment-element" 
+          options={{ 
+            layout: "tabs",
+            fields: {
+              billingDetails: {
+                address: 'auto',
+                name: 'auto',
+                email: 'auto'
+              }
+            }
+          }} 
+        />
       </div>
 
       <div className="flex items-start gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">

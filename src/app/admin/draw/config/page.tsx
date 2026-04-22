@@ -168,7 +168,7 @@ export default function AdminDrawConfig() {
                     />
                   </div>
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Contribution Per Member (£)</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Contribution Per Member ($)</label>
                     <input 
                       type="number"
                       value={config.contribution_per_subscriber}
@@ -198,21 +198,21 @@ export default function AdminDrawConfig() {
                   <div className="space-y-4 pt-4 border-t border-white/10">
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-bold text-white/60">Jackpot (40% + Roll)</span>
-                      <span className="text-lg font-black text-emerald-400">£{pools.jackpot.toLocaleString()}</span>
+                      <span className="text-lg font-black text-emerald-400">${pools.jackpot.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-bold text-white/60">Tier 2 (35%)</span>
-                      <span className="text-lg font-black">£{pools.tier2.toLocaleString()}</span>
+                      <span className="text-lg font-black">${pools.tier2.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-bold text-white/60">Tier 3 (25%)</span>
-                      <span className="text-lg font-black">£{pools.tier3.toLocaleString()}</span>
+                      <span className="text-lg font-black">${pools.tier3.toLocaleString()}</span>
                     </div>
                   </div>
 
                   <div className="pt-6 mt-6 border-t-2 border-white/10 flex justify-between items-center">
                     <span className="text-sm font-black uppercase tracking-widest text-white/40">Total Pool</span>
-                    <span className="text-3xl font-black tracking-tight">£{totalPool.toLocaleString()}</span>
+                    <span className="text-3xl font-black tracking-tight">${totalPool.toLocaleString()}</span>
                   </div>
                 </div>
               </div>

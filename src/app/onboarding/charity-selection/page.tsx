@@ -132,7 +132,7 @@ export default function CharitySelectionOnboarding() {
              <div className="space-y-8">
                 <input 
                   type="range" 
-                  min="5" 
+                  min="10" 
                   max="50" 
                   step="5"
                   className="w-full h-3 bg-slate-100 rounded-full appearance-none cursor-pointer accent-indigo-600"
@@ -140,7 +140,7 @@ export default function CharitySelectionOnboarding() {
                   onChange={e => setContribution(Number(e.target.value))}
                 />
                 <div className="flex justify-between text-[10px] font-black text-slate-300 uppercase tracking-widest">
-                   <span>Standard (5%)</span>
+                   <span>Standard (10%)</span>
                    <span>Premium (25%)</span>
                    <span>Elite (50%)</span>
                 </div>

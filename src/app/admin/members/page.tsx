@@ -40,22 +40,22 @@ export default function AdminMembersManagement() {
 
   return (
     <AdminGuard>
-      <div className="flex min-h-screen bg-gray-50">
+      <div className="flex min-h-screen bg-background">
         <AdminSidebar />
 
         <main className="flex-1 ml-64 p-10">
-          <header className="flex justify-between items-center mb-10">
+          <header className="flex justify-between items-center mb-12">
              <div>
-                <h1 className="text-2xl font-black text-primary mb-1">Platform Members</h1>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Manage users, subscriptions, and total impact</p>
+                <h1 className="text-4xl font-black text-primary tracking-tight mb-2">Platform Members</h1>
+                <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Live Database Overview</p>
              </div>
-             <div className="flex items-center gap-4">
-                <div className="bg-white border border-gray-100 p-2 rounded-xl flex items-center gap-3 px-4 shadow-sm">
-                   <Search size={16} className="text-gray-400" />
+             <div className="flex items-center gap-6">
+                <div className="bg-white border border-slate-100 p-3 rounded-2xl flex items-center gap-3 px-6 shadow-sm hover:shadow-lg transition-all focus-within:ring-2 focus-within:ring-primary/5">
+                   <Search size={18} className="text-slate-300" />
                    <input 
                     type="text" 
                     placeholder="Search by name or email..." 
-                    className="bg-transparent border-none outline-none text-sm font-medium w-64"
+                    className="bg-transparent border-none outline-none text-sm font-bold w-72 placeholder:text-slate-300"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                    />
@@ -65,62 +65,48 @@ export default function AdminMembersManagement() {
 
           <div className="grid gap-8">
              {/* Stats Cards */}
-             <div className="grid md:grid-cols-3 gap-6">
-                <div className="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm flex items-center gap-6 relative overflow-hidden">
-                   <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
-                      <Users size={24} />
+              <div className="grid md:grid-cols-3 gap-8">
+                 {[
+                   { label: "Total Members", value: members.length, icon: Users, color: "text-primary", bg: "bg-primary/5", trend: "Database" },
+                   { label: "Active Premium", value: members.filter(m => m.membership_tier !== 'Free').length, icon: Star, color: "text-secondary-light", bg: "bg-secondary-light/10", trend: "Revenue" },
+                   { label: "Impact Growth", value: "+12.4%", icon: TrendingUp, color: "text-emerald-500", bg: "bg-emerald-50", trend: "Global" }
+                 ].map((stat, i) => (
+                   <div key={i} className="bg-white p-10 rounded-[40px] border border-slate-100 shadow-sm flex items-center gap-8 relative overflow-hidden group hover:shadow-2xl hover:shadow-primary/5 transition-all">
+                      <div className={`w-16 h-16 rounded-2xl ${stat.bg} flex items-center justify-center ${stat.color} transition-colors group-hover:bg-white group-hover:shadow-lg`}>
+                         <stat.icon size={28} />
+                      </div>
+                      <div>
+                         <div className="flex items-center gap-2 mb-1">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</span>
+                            <span className="px-2 py-0.5 rounded-md bg-slate-50 text-slate-400 text-[8px] font-black uppercase tracking-widest">{stat.trend}</span>
+                         </div>
+                         <p className="text-3xl font-black text-primary tracking-tighter">{stat.value}</p>
+                      </div>
+                      <div className="absolute top-0 right-0 p-8 opacity-5 text-primary group-hover:opacity-10 transition-opacity">
+                         <stat.icon size={80} />
+                      </div>
                    </div>
-                   <div>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Members</p>
-                      <p className="text-2xl font-black text-primary">{members.length}</p>
-                   </div>
-                   <div className="absolute top-0 right-0 p-8 opacity-5">
-                      <Users size={80} />
-                   </div>
-                </div>
-                <div className="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm flex items-center gap-6 relative overflow-hidden">
-                   <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-                      <Star size={24} />
-                   </div>
-                   <div>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Active Premium</p>
-                      <p className="text-2xl font-black text-primary">
-                         {members.filter(m => m.membership_tier !== 'Free').length}
-                      </p>
-                   </div>
-                   <div className="absolute top-0 right-0 p-8 opacity-5">
-                      <Star size={80} />
-                   </div>
-                </div>
-                <div className="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm flex items-center gap-6 relative overflow-hidden">
-                   <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
-                      <TrendingUp size={24} />
-                   </div>
-                   <div>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Impact Growth</p>
-                      <p className="text-2xl font-black text-primary">+12.4%</p>
-                   </div>
-                </div>
-             </div>
+                 ))}
+              </div>
 
              {/* Members Table */}
-             <div className="bg-white rounded-[40px] border border-gray-100 shadow-sm overflow-hidden">
+             <div className="bg-white rounded-[48px] border border-slate-100 shadow-sm overflow-hidden">
                 {loading ? (
-                   <div className="flex items-center justify-center py-40">
-                      <Loader2 size={32} className="animate-spin text-primary opacity-20" />
+                   <div className="flex items-center justify-center py-48">
+                      <Loader2 size={40} className="animate-spin text-primary opacity-20" />
                    </div>
                 ) : (
                    <table className="w-full text-left">
                       <thead>
-                         <tr className="bg-gray-50/50 border-b border-gray-100">
-                            <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Member</th>
-                            <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Subscription</th>
-                            <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Lifetime Impact</th>
-                            <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Joined</th>
-                            <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
+                         <tr className="bg-slate-50/50 border-b border-slate-100">
+                            <th className="px-10 py-8 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Member Profile</th>
+                            <th className="px-10 py-8 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Subscription Status</th>
+                            <th className="px-10 py-8 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Impact Generated</th>
+                            <th className="px-10 py-8 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Registration</th>
+                            <th className="px-10 py-8 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Actions</th>
                          </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-50">
+                      <tbody className="divide-y divide-slate-50">
                          {filteredMembers.map((member) => (
                             <tr key={member.id} className="hover:bg-gray-50/50 transition-colors group">
                                <td className="px-8 py-6">

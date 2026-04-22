@@ -17,7 +17,7 @@ const plans = [
     features: [
       "1 Monthly Draw Entry",
       "Basic Performance Tracking",
-      "5% Charity Allocation",
+      "10% Charity Allocation",
       "Impact Badge",
       "Email Support"
     ],

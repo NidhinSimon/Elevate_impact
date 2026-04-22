@@ -18,16 +18,32 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { formatDateSafe } from "@/lib/date";
 
 const supabase = createClient();
 
 export default function Dashboard() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <Loader2 className="animate-spin text-primary opacity-20" size={40} />
+        </div>
+      }
+    >
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+function DashboardContent() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [profile, setProfile] = useState<any>(null);
+  const [winnings, setWinnings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
@@ -43,7 +59,7 @@ export default function Dashboard() {
       .select('*, charities(name)')
       .eq('id', user!.id)
       .single();
-    
+
     if (data) {
       setProfile(data);
       // Show onboarding if subscribed=true or if not completed yet
@@ -52,6 +68,14 @@ export default function Dashboard() {
         setShowOnboarding(true);
       }
     }
+
+    // Fetch winnings
+    const { data: winningsData } = await supabase
+      .from('winnings')
+      .select('*')
+      .eq('user_id', user!.id);
+
+    setWinnings(winningsData || []);
     setLoading(false);
   };
 
@@ -68,9 +92,14 @@ export default function Dashboard() {
     return null;
   }
 
+  const totalWon = winnings.reduce((acc, curr) => acc + Number(curr.amount), 0);
+  const latestWinning = winnings[0];
+  const needsVerification = latestWinning && latestWinning.payout_status === 'pending';
+
   const metrics = [
     { label: "Active Entries", value: "12", trend: profile?.subscription_tier === 'yearly' ? 'Elite' : 'Member', icon: Trophy, color: "text-emerald-600" },
     { label: "Impact Partner", value: profile?.charities?.name || "None", trend: "Active", icon: Heart, color: "text-rose-600" },
+    { label: "Total Winnings", value: `$${totalWon.toLocaleString()}`, trend: latestWinning ? (latestWinning.payout_status === 'paid' ? 'Paid' : 'Pending') : 'No wins yet', icon: Zap, color: "text-amber-600" },
   ];
 
   return (
@@ -80,12 +109,12 @@ export default function Dashboard() {
       {showOnboarding && <OnboardingModal userId={user.id} />}
 
       <main className="pt-32 pb-24 max-w-[1440px] mx-auto px-10">
-        <div className="grid lg:grid-cols-[280px_1fr] gap-20">
+        <div className="grid lg:grid-cols-[280px_1fr] gap-16">
 
           <DashboardSidebar />
 
-          {/* Main Dashboard Content */}
-          <div className="space-y-12">
+          {/* Main Dashboard Content - Workspace Canvas */}
+          <div className="bg-white rounded-[48px] p-12 shadow-2xl shadow-primary/5 space-y-12 border border-slate-100">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div>
@@ -180,11 +209,25 @@ export default function Dashboard() {
                     <Zap size={24} className="text-[#1A146B]/10 group-hover:text-[#1A146B]/20 transition-colors" fill="currentColor" />
                   </div>
                   <h3 className="text-lg font-black text-[#0F0A4A] mb-2 tracking-tight">Active Membership</h3>
-                  <p className="text-sm text-slate-500 mb-8 leading-relaxed font-medium">Plan renews on {profile?.renewal_date ? new Date(profile.renewal_date).toLocaleDateString() : 'N/A'}.</p>
+                  <p className="text-sm text-slate-500 mb-8 leading-relaxed font-medium">Plan renews on {formatDateSafe(profile?.renewal_date, "N/A")}</p>
                   <Link href="/subscribe" className="inline-flex items-center gap-2 text-[#1A146B] font-bold text-sm hover:gap-3 transition-all">
                     Manage Billing <ArrowRight size={18} />
                   </Link>
                 </section>
+
+                {needsVerification && (
+                  <section className="p-10 rounded-[40px] bg-amber-50 border border-amber-100 shadow-sm animate-pulse">
+                    <div className="flex items-center gap-3 mb-6 text-amber-700">
+                      <Trophy size={20} />
+                      <span className="text-[11px] font-black uppercase tracking-[0.2em]">Verification Required</span>
+                    </div>
+                    <h3 className="text-lg font-black text-amber-900 mb-2 tracking-tight">Claim Your Prize</h3>
+                    <p className="text-sm text-amber-700/70 mb-8 leading-relaxed font-medium">Your latest win requires proof of performance to be processed.</p>
+                    <Link href="/dashboard/verify-win" className="inline-flex items-center gap-2 text-amber-900 font-bold text-sm hover:gap-3 transition-all">
+                      Verify Now <ArrowRight size={18} />
+                    </Link>
+                  </section>
+                )}
               </div>
             </div>
           </div>

@@ -10,7 +10,13 @@ export async function createClient() {
     return createServerClient(
       'https://placeholder.supabase.co',
       'placeholder',
-      { cookies: {} }
+      { 
+        cookies: {
+          get: () => undefined,
+          set: () => {},
+          remove: () => {}
+        } 
+      }
     )
   }
 

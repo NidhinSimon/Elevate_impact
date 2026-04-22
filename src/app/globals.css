@@ -34,8 +34,8 @@
   --color-primary-muted: var(--primary-muted);
   --color-secondary: var(--secondary);
   --color-secondary-light: var(--secondary-light);
-  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
-  --font-display: var(--font-manrope), sans-serif;
+  --font-sans: "Inter Variable", system-ui, -apple-system, sans-serif;
+  --font-display: "Manrope Variable", sans-serif;
 }
 
 body {

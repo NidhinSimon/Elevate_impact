@@ -110,3 +110,16 @@ export function splitPrize(poolAmount: number, winnerCount: number): number {
   if (winnerCount === 0) return 0;
   return poolAmount / winnerCount;
 }
+
+export function getFrequencyMap(scores: ScoreRecord[]): Record<number, number> {
+  const frequencyMap: Record<number, number> = {};
+  for (let i = 1; i <= 45; i++) frequencyMap[i] = 0;
+  
+  scores.forEach(s => {
+    if (s.score >= 1 && s.score <= 45) {
+      frequencyMap[s.score]++;
+    }
+  });
+  
+  return frequencyMap;
+}

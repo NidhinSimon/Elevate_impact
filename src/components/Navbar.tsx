@@ -103,14 +103,7 @@ export default function Navbar() {
                         Dashboard
                       </Link>
                       
-                      <Link
-                        href="/dashboard/scores"
-                        onClick={() => setIsProfileOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-text-muted hover:bg-surface-container-low hover:text-primary transition-all group"
-                      >
-                        <Zap size={18} className="group-hover:scale-110 transition-transform" />
-                        My Performance Scores
-                      </Link>
+                  
 
                       <div className="my-2 border-t border-gray-50"></div>
 

@@ -65,47 +65,51 @@ export default function AdminAnalyticsPage() {
 
   return (
     <AdminGuard>
-      <div className="flex min-h-screen bg-gray-50">
+      <div className="flex min-h-screen bg-background">
         <AdminSidebar />
 
         <main className="flex-1 ml-64 p-10">
           <header className="mb-12">
-             <h1 className="text-2xl font-black text-primary mb-1">Impact Analytics</h1>
-             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Platform Performance · REAL-TIME AUDIT</p>
+             <h1 className="text-4xl font-black text-primary tracking-tight mb-2">Impact Analytics</h1>
+             <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Platform Performance · {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
           </header>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
              {[
-               { label: "Total Members", value: stats.totalUsers, icon: Users, color: "text-indigo-600", bg: "bg-indigo-50" },
-               { label: "Active Subs", value: stats.activeSubs, icon: Zap, color: "text-amber-500", bg: "bg-amber-50" },
-               { label: "Prize Pool", value: `$${(stats.totalPool / 1000).toFixed(1)}k`, icon: Trophy, color: "text-emerald-500", bg: "bg-emerald-50" },
-               { label: "Charity Impact", value: `$${(stats.charityImpact / 1000).toFixed(0)}k`, icon: Heart, color: "text-rose-500", bg: "bg-rose-50" }
+               { label: "Total Members", value: stats.totalUsers, icon: Users, color: "text-primary", bg: "bg-primary/5", trend: "Stable" },
+               { label: "Active Subs", value: stats.activeSubs, icon: Zap, color: "text-secondary-light", bg: "bg-secondary-light/10", trend: "Active" },
+               { label: "Prize Pool", value: `$${(stats.totalPool / 1000).toFixed(1)}k`, icon: Trophy, color: "text-emerald-500", bg: "bg-emerald-50", trend: "Locked" },
+               { label: "Charity Impact", value: `$${(stats.charityImpact / 1000).toFixed(0)}k`, icon: Heart, color: "text-rose-500", bg: "bg-rose-50", trend: "Distributed" }
              ].map((stat, i) => (
-               <div key={i} className="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-500 group">
-                  <div className="flex justify-between items-start mb-6">
-                     <div className={`p-4 rounded-2xl ${stat.bg} ${stat.color} transition-colors`}>
-                        <stat.icon size={24} />
+               <div key={i} className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-primary/5 transition-all group relative overflow-hidden">
+                  <div className="flex justify-between items-start mb-6 relative z-10">
+                     <div className={`w-12 h-12 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center transition-colors group-hover:bg-white group-hover:shadow-lg`}>
+                        <stat.icon size={22} />
                      </div>
-                     <span className="text-[10px] font-black text-emerald-500 bg-emerald-50 px-2 py-1 rounded-md">+12%</span>
+                     <span className="text-[10px] font-black text-emerald-500 bg-emerald-50 px-3 py-1 rounded-lg uppercase tracking-widest">{stat.trend}</span>
                   </div>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{stat.label}</p>
-                  <p className="text-3xl font-black text-primary tracking-tighter">{stat.value}</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 relative z-10">{stat.label}</p>
+                  <p className="text-3xl font-black text-primary tracking-tighter relative z-10">{stat.value}</p>
+                  <div className="absolute top-0 right-0 p-6 opacity-5 text-primary group-hover:scale-110 transition-transform">
+                     <stat.icon size={60} />
+                  </div>
                </div>
              ))}
           </div>
 
           <div className="grid lg:grid-cols-[1fr_400px] gap-10">
              {/* Main Chart Card */}
-             <section className="bg-white rounded-[48px] border border-gray-100 shadow-sm p-12 relative overflow-hidden">
-                <div className="flex items-center justify-between mb-12">
+             <section className="bg-white rounded-[48px] border border-slate-100 shadow-sm p-12 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-64 h-64 bg-primary/5 blur-[100px] -ml-32 -mt-32 rounded-full pointer-events-none" />
+                <div className="flex items-center justify-between mb-12 relative z-10">
                    <div>
-                      <h3 className="text-xl font-black text-primary mb-1">Growth Trajectory</h3>
-                      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Subscriber volume (Last 30 days)</p>
+                      <h3 className="text-2xl font-black text-primary tracking-tight mb-1">Growth Trajectory</h3>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Global subscriber volume (Real-time)</p>
                    </div>
-                   <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-xl border border-gray-100">
-                      <Calendar size={14} className="text-gray-400" />
-                      <span className="text-xs font-bold text-primary">April 2024</span>
+                   <div className="flex items-center gap-3 px-5 py-2.5 bg-slate-50/50 rounded-2xl border border-slate-100 shadow-inner">
+                      <Calendar size={14} className="text-slate-300" />
+                      <span className="text-[10px] font-black text-primary uppercase tracking-widest">Active Cycle</span>
                    </div>
                 </div>
 

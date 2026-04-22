@@ -1,21 +1,9 @@
 import type { Metadata } from "next";
-import { Inter, Manrope } from "next/font/google";
+import "@fontsource-variable/inter";
+import "@fontsource-variable/manrope";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth-provider";
 import { Toaster } from "react-hot-toast";
-
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const manrope = Manrope({
-  subsets: ["latin"],
-  variable: "--font-manrope",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: {
@@ -33,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${manrope.variable} h-full antialiased`}>
+    <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col font-sans">
         <AuthProvider>
           {children}

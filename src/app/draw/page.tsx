@@ -1,258 +1,240 @@
 "use client";
 
+import DashboardSidebar from "@/components/DashboardSidebar";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import DashboardSidebar from "@/components/DashboardSidebar";
-import {
-  Trophy,
-  CheckCircle2,
-  Loader2
-} from "lucide-react";
-
 import { useAuth } from "@/components/auth-provider";
-import { useRouter } from "next/navigation";
-
 import { useState, useEffect } from "react";
-import { winningsService, Winning } from "@/services/winningsService";
+import { supabase } from "@/lib/supabase";
+import { 
+  Trophy, 
+  Target, 
+  TrendingUp, 
+  Users, 
+  Calendar,
+  ShieldCheck,
+  CheckCircle2,
+  AlertCircle
+} from "lucide-react";
+import { toast } from "react-hot-toast";
 
-import { createClient } from "@/utils/supabase/client";
-
-const supabase = createClient();
-
-export default function DrawResults() {
+export default function UserDrawPage() {
   const { user, loading: authLoading } = useAuth();
-  const [recentWinners, setRecentWinners] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
-
-  const [prizeTiers, setPrizeTiers] = useState([
-
-    { tier: "5 Match", winners: "Loading...", amount: "$0", sub: "ROLLOVER", icon: "5" },
-    { tier: "4 Match", winners: "Loading...", amount: "$0", sub: "PER PERSON", icon: "4" },
-    { tier: "3 Match", winners: "Loading...", amount: "$0", sub: "PER PERSON", icon: "3" },
-  ]);
   const [winningNumbers, setWinningNumbers] = useState<number[]>([0, 0, 0, 0, 0]);
+  const [loading, setLoading] = useState(true);
+  const [prizeTiers, setPrizeTiers] = useState<any[]>([]);
+  const [activePool, setActivePool] = useState<any>(null);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/login");
-    } else if (user) {
-      fetchWinners();
-      fetchLatestDrawStats();
-    }
-  }, [user, authLoading, router]);
+    fetchDrawData();
+  }, []);
 
-  const fetchLatestDrawStats = async () => {
+  const fetchDrawData = async () => {
     try {
-      // 1. Fetch latest prize pool
-      const { data: pool } = await supabase
+      setLoading(true);
+      // 1. Fetch the latest published prize pool
+      const { data: pool, error: poolError } = await supabase
         .from('prize_pools')
         .select('*')
-        .order('draw_date', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(1)
         .single();
 
+      if (poolError) {
+        console.warn("No draw results found yet.");
+        setLoading(false);
+        return;
+      }
+
       if (pool) {
-        if (pool.winning_numbers) {
+        setActivePool(pool);
+        if (pool.winning_numbers && pool.winning_numbers.length === 5) {
           setWinningNumbers(pool.winning_numbers);
         }
-        
-        // 2. Fetch winners count per tier for the latest cycle
+
+        // 2. Fetch winners count per tier for THIS SPECIFIC draw
         const { data: winnersData } = await supabase
           .from('winnings')
           .select('tier')
-          .order('created_at', { ascending: false });
+          .eq('draw_id', pool.draw_id);
 
-        const counts = { jackpot: 0, tier_2: 0, tier_3: 0 };
-        winnersData?.forEach(w => {
+        const counts = { jackpot: 0, tier2: 0, tier3: 0 };
+        winnersData?.forEach((w: any) => {
           if (w.tier === 'jackpot') counts.jackpot++;
-          if (w.tier === 'tier_2') counts.tier_2++;
-          if (w.tier === 'tier_3') counts.tier_3++;
+          if (w.tier === 'tier2') counts.tier2++;
+          if (w.tier === 'tier3') counts.tier3++;
         });
 
+        // 3. Update UI with local currency symbols and accurate counts
         setPrizeTiers([
-          { 
-            tier: "5 Match", 
-            winners: `${counts.jackpot} Winners`, 
-            amount: `$${(Number(pool.jackpot_amount) / (counts.jackpot || 1)).toLocaleString()}`, 
-            sub: counts.jackpot === 0 ? "ROLLOVER" : "PER PERSON", 
-            icon: "5" 
+          {
+            tier: "5 Match",
+            winners: `${counts.jackpot} Winners`,
+            amount: `$${(Number(pool.jackpot_amount) / (counts.jackpot || 1)).toLocaleString()}`,
+            sub: counts.jackpot === 0 ? "ROLLOVER" : "PER PERSON",
+            icon: "5",
+            color: "text-amber-500",
+            bg: "bg-amber-50"
           },
-          { 
-            tier: "4 Match", 
-            winners: `${counts.tier_2} Winners`, 
-            amount: `$${(Number(pool.total_pool * 0.35) / (counts.tier_2 || 1)).toLocaleString()}`, 
-            sub: "PER PERSON", 
-            icon: "4" 
+          {
+            tier: "4 Match",
+            winners: `${counts.tier2} Winners`,
+            amount: `$${(Number(pool.total_pool * 0.35) / (counts.tier2 || 1)).toLocaleString()}`,
+            sub: "PER PERSON",
+            icon: "4",
+            color: "text-indigo-600",
+            bg: "bg-indigo-50"
           },
-          { 
-            tier: "3 Match", 
-            winners: `${counts.tier_3} Winners`, 
-            amount: `$${(Number(pool.total_pool * 0.25) / (counts.tier_3 || 1)).toLocaleString()}`, 
-            sub: "PER PERSON", 
-            icon: "3" 
+          {
+            tier: "3 Match",
+            winners: `${counts.tier3} Winners`,
+            amount: `$${(Number(pool.total_pool * 0.25) / (counts.tier3 || 1)).toLocaleString()}`,
+            sub: "PER PERSON",
+            icon: "3",
+            color: "text-emerald-500",
+            bg: "bg-emerald-50"
           },
         ]);
       }
     } catch (err) {
       console.error("Error fetching draw stats:", err);
-    }
-  };
-
-
-
-  const fetchWinners = async () => {
-    try {
-      const data = await winningsService.getAllWinnings();
-      // Map database winnings to UI format
-      const mapped = data.slice(0, 4).map(w => ({
-        handle: w.profiles?.email.split('@')[0] || 'Member',
-        match: "Verified Selection",
-        tier: w.amount >= 1000 ? "Elite Tier" : "Impact Tier",
-        amount: `$${Number(w.amount).toLocaleString()}`,
-        initial: (w.profiles?.email[0] || 'M').toUpperCase()
-      }));
-      setRecentWinners(mapped);
-
-    } catch (err) {
-      console.error("Error fetching winners:", err);
     } finally {
       setLoading(false);
     }
   };
 
   if (authLoading) return null;
-  if (!user) return null;
-
 
   return (
     <div className="min-h-screen bg-background font-sans text-text-main">
       <Navbar />
 
       <main className="pt-32 pb-24 max-w-[1440px] mx-auto px-10">
-        <div className="grid lg:grid-cols-[280px_1fr] gap-20">
+        <div className="grid lg:grid-cols-[280px_1fr] gap-16">
 
           <DashboardSidebar />
 
-          {/* Main Content Area */}
-          <div className="space-y-20">
+          <div className="bg-white rounded-[48px] p-12 shadow-2xl shadow-primary/5 space-y-12 border border-slate-100 min-h-[800px]">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
               <div>
-                <p className="text-[11px] font-black text-emerald-500 uppercase tracking-[0.3em] mb-3">October 2023</p>
-                <h1 className="text-[44px] font-extrabold text-[#0F0A4A] tracking-tight">Monthly Draw Results</h1>
+                <p className="text-secondary-light font-black text-xs uppercase tracking-[0.2em] mb-3">
+                  {activePool ? new Date(activePool.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Loading...'}
+                </p>
+                <h1 className="text-[44px] font-black text-primary tracking-tighter leading-tight">
+                  Monthly Draw Results
+                </h1>
               </div>
-              <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-full border border-slate-100 shadow-sm">
-                <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white">
-                  <CheckCircle2 size={12} />
-                </div>
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Draw Certified by Independent Auditors</span>
+              <div className="inline-flex items-center gap-3 px-6 py-3 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100 shadow-sm">
+                <ShieldCheck size={20} />
+                <span className="text-[10px] font-black uppercase tracking-widest">Draw Certified by Independent Auditors</span>
               </div>
-            </div>
+            </header>
 
-            {/* Hero Card */}
-            <section className="bg-[#1A146B] rounded-[48px] p-12 text-white shadow-2xl shadow-indigo-900/20 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-emerald-400/10 blur-[100px] -mr-48 -mt-48 pointer-events-none" />
-
-              <div className="relative z-10 grid lg:grid-cols-2 gap-12 items-center">
-                <div>
-                  <div className="inline-block px-4 py-1.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-8">
-                    Jackpot Rolled Over
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-40 gap-6">
+                <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
+                <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Fetching Latest Draw...</p>
+              </div>
+            ) : !activePool ? (
+               <div className="py-32 text-center">
+                  <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-8 text-slate-200">
+                    <Trophy size={48} />
                   </div>
-                  <p className="text-sm font-bold opacity-60 uppercase tracking-[0.2em] mb-4">Current Prize Pool</p>
-                  <h2 className="text-[84px] font-black leading-none mb-8 tracking-tighter">$2.4M</h2>
-                  <p className="text-lg text-indigo-100/70 max-w-md leading-relaxed font-medium">
-                    No 5-match winners this month. The jackpot rolls over to November, fueling even greater impact for our global charity partners.
-                  </p>
-                </div>
+                  <h2 className="text-2xl font-black text-primary mb-4">No Results Published</h2>
+                  <p className="text-slate-500 font-medium max-w-md mx-auto">The first draw of the month is currently being processed. Check back soon for the official results!</p>
+               </div>
+            ) : (
+              <>
+                {/* Hero Section: Numbers & Jackpot */}
+                <section className="bg-primary rounded-[40px] p-12 text-white relative overflow-hidden shadow-2xl shadow-primary/20">
+                  <div className="relative z-10 grid lg:grid-cols-2 gap-12 items-center">
+                    <div>
+                      <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full text-[10px] font-black uppercase tracking-widest mb-8 border border-white/10">
+                        <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                        {activePool.is_rollover ? "Jackpot Rolling Over" : "Jackpot Claimed"}
+                      </div>
+                      <p className="text-white/60 font-black text-xs uppercase tracking-widest mb-4">Current Prize Pool</p>
+                      <h2 className="text-7xl lg:text-8xl font-black tracking-tighter mb-8 flex items-baseline gap-2">
+                        $${Number(activePool.jackpot_amount).toLocaleString()}
+                      </h2>
+                      <p className="text-white/70 font-medium leading-relaxed max-w-md">
+                        {activePool.is_rollover 
+                          ? "No jackpot winner was found this cycle. The remaining pool has been added to next month's grand prize!"
+                          : "We have a winner! This cycle's jackpot has been claimed, creating life-changing impact."
+                        }
+                      </p>
+                    </div>
 
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[32px] p-10 space-y-6">
-                  <p className="text-[11px] font-black uppercase tracking-[0.3em] text-white/40 text-center">Official Winning Numbers</p>
-                  <div className="flex gap-4">
-                    {winningNumbers.map((num, i) => (
-                      <div 
-                        key={i}
-                        className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-2xl font-black text-white shadow-xl"
-                      >
-                        {num < 10 ? `0${num}` : num}
+                    <div className="bg-white/5 backdrop-blur-xl rounded-[32px] p-10 border border-white/10">
+                      <p className="text-center text-white/40 font-black text-[10px] uppercase tracking-widest mb-10">Official Winning Numbers</p>
+                      <div className="flex justify-center gap-4">
+                        {winningNumbers.map((num, i) => (
+                          <div 
+                            key={i} 
+                            className="w-14 h-20 md:w-16 md:h-24 bg-white/10 rounded-2xl flex items-center justify-center text-3xl md:text-4xl font-black border border-white/20 shadow-xl"
+                          >
+                            {num < 10 ? `0${num}` : num}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Decorative Elements */}
+                  <div className="absolute top-0 right-0 w-96 h-96 bg-secondary-light/20 blur-[120px] rounded-full -mr-48 -mt-48" />
+                </section>
+
+                {/* Prize Breakdown */}
+                <section>
+                  <div className="flex items-center gap-4 mb-10">
+                    <h3 className="text-xl font-black text-primary">Prize Breakdown</h3>
+                    <div className="h-px flex-1 bg-slate-100" />
+                  </div>
+
+                  <div className="grid md:grid-cols-3 gap-8">
+                    {prizeTiers.map((tier, i) => (
+                      <div key={i} className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-sm hover:shadow-xl hover:scale-[1.02] transition-all group">
+                        <div className="flex justify-between items-start mb-8">
+                          <div className={`w-12 h-12 ${tier.bg} ${tier.color} rounded-2xl flex items-center justify-center text-xl font-black shadow-sm`}>
+                            {tier.icon}
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Winners</p>
+                            <p className="text-sm font-black text-primary">{tier.winners}</p>
+                          </div>
+                        </div>
+                        <p className="text-sm font-bold text-slate-400 mb-2">{tier.tier}</p>
+                        <h4 className="text-3xl font-black text-primary tracking-tight mb-2">{tier.amount}</h4>
+                        <p className="text-[10px] font-black text-secondary-light uppercase tracking-widest">{tier.sub}</p>
                       </div>
                     ))}
                   </div>
-                </div>
-              </div>
-            </section>
+                </section>
 
-            {/* Impact Champions & Prize Tiers */}
-            <div className="grid lg:grid-cols-[1fr_380px] gap-16">
-              <section className="bg-white rounded-[48px] border border-slate-100 shadow-sm overflow-hidden">
-                <div className="p-10 border-b border-slate-50 flex items-center justify-between">
-                  <h2 className="text-2xl font-black text-[#0F0A4A]">Impact Champions</h2>
-                </div>
-                <div className="px-10 py-6 bg-slate-50/50 flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50">
-                  <span>Top Contributors for October</span>
-                  <span className="text-emerald-600">Total Community Contributions: $412,850</span>
-                </div>
-                <div className="divide-y divide-slate-50">
-                  {loading ? (
-                    <div className="p-20 text-center">
-                      <Loader2 size={32} className="animate-spin text-primary opacity-20 mx-auto" />
+                {/* Footer Info */}
+                <section className="grid md:grid-cols-2 gap-8 pt-8">
+                  <div className="p-8 rounded-[32px] bg-slate-50 flex items-center gap-6">
+                    <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center text-indigo-600 shadow-sm shrink-0">
+                      <Target size={28} />
                     </div>
-                  ) : recentWinners.length === 0 ? (
-                    <div className="p-20 text-center text-slate-400 font-bold text-sm">
-                      No official winners published for this cycle yet.
+                    <div>
+                      <h4 className="font-black text-primary mb-1">How Prizes are Distributed</h4>
+                      <p className="text-xs text-slate-500 font-medium">All prizes are automatically shared equally among players in the same match tier.</p>
                     </div>
-                  ) : (
-                    recentWinners.map(c => (
-                      <div key={c.handle} className="p-8 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
-                        <div className="flex items-center gap-6">
-                          <div className="w-14 h-14 rounded-full bg-[#0F0A4A] flex items-center justify-center text-secondary-light font-black text-lg">
-                            {c.initial}
-                          </div>
-                          <div>
-                            <p className="font-bold text-[#0F0A4A] text-lg">@{c.handle}</p>
-                            <p className="text-sm text-slate-400 font-medium">{c.match} · <span className="text-indigo-600">{c.tier}</span></p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="px-5 py-2 bg-emerald-50 text-[#15803d] rounded-xl font-black text-lg border border-emerald-100">
-                            {c.amount}
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                <div className="p-8 text-center border-t border-slate-50">
-                  <button className="text-sm font-bold text-indigo-600 hover:underline">View Complete October Hall of Fame</button>
-                </div>
-              </section>
-
-              <section className="space-y-10">
-                <h2 className="text-2xl font-black text-[#0F0A4A] ml-4">Prize Tiers</h2>
-                <div className="space-y-4">
-                  {prizeTiers.map(tier => (
-                    <div key={tier.tier} className="p-8 bg-white rounded-[32px] border border-slate-100 shadow-sm hover:shadow-lg transition-all group">
-                      <div className="flex items-center justify-between gap-6">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 font-black border border-slate-100 group-hover:bg-indigo-50 group-hover:text-primary transition-colors">
-                            {tier.icon}
-                          </div>
-                          <div>
-                            <p className="text-sm font-black text-primary mb-0.5">{tier.tier}</p>
-                            <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{tier.winners}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-black text-primary leading-tight">{tier.amount}</p>
-                          <p className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">{tier.sub}</p>
-                        </div>
-                      </div>
+                  </div>
+                  <div className="p-8 rounded-[32px] bg-slate-50 flex items-center gap-6">
+                    <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center text-emerald-500 shadow-sm shrink-0">
+                      <CheckCircle2 size={28} />
                     </div>
-                  ))}
-                </div>
-              </section>
-            </div>
+                    <div>
+                      <h4 className="font-black text-primary mb-1">Verification Status</h4>
+                      <p className="text-xs text-slate-500 font-medium">Results are finalized within 48 hours of the draw following independent audit.</p>
+                    </div>
+                  </div>
+                </section>
+              </>
+            )}
           </div>
         </div>
       </main>

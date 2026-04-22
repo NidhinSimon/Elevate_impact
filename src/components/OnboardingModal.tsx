@@ -152,7 +152,7 @@ export default function OnboardingModal({ userId }: OnboardingModalProps) {
                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Impact Projection</span>
                   </div>
                   <p className="text-sm font-medium text-slate-600 leading-relaxed">
-                    At {percentage}%, you are contributing <span className="text-primary font-black">£{(9.99 * (percentage / 100)).toFixed(2)}</span> of your monthly subscription to {charities.find(c => c.id === selectedCharity)?.name || 'mission'}.
+                    At {percentage}%, you are contributing <span className="text-primary font-black">${(9.99 * (percentage / 100)).toFixed(2)}</span> of your monthly subscription to {charities.find(c => c.id === selectedCharity)?.name || 'mission'}.
                   </p>
                 </div>
               </div>

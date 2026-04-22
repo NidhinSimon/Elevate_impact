@@ -5,10 +5,10 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/components/auth-provider";
 import { useState, useEffect } from "react";
-import { 
-  Trophy, 
-  Calendar, 
-  Trash2, 
+import {
+  Trophy,
+  Calendar,
+  Trash2,
   Edit3,
   Loader2,
   CheckCircle2,
@@ -124,10 +124,10 @@ export default function PerformanceLogsPage() {
       <Navbar />
 
       <main className="pt-32 pb-24 max-w-[1440px] mx-auto px-10">
-        <div className="grid lg:grid-cols-[280px_1fr] gap-20">
+        <div className="grid lg:grid-cols-[280px_1fr] gap-16">
           <DashboardSidebar />
 
-          <div className="space-y-12">
+          <div className="bg-white rounded-[48px] p-12 shadow-2xl shadow-primary/5 space-y-12 border border-slate-100">
             <header>
               <h1 className="text-[44px] font-extrabold text-primary mb-2 tracking-tight">Performance Logs</h1>
               <p className="text-lg text-text-muted font-medium">Manage your rolling verified scores for the monthly draw.</p>
@@ -147,13 +147,13 @@ export default function PerformanceLogsPage() {
                 <form onSubmit={handleAddScore} className="grid md:grid-cols-[1fr_1fr_auto] gap-8 items-end">
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-text-muted/40 uppercase tracking-widest">Stableford Score (1-45)</label>
-                    <input 
+                    <input
                       type="number"
                       required
                       min="1"
                       max="45"
                       value={newScoreForm.score}
-                      onChange={e => setNewScoreForm({...newScoreForm, score: parseInt(e.target.value)})}
+                      onChange={e => setNewScoreForm({ ...newScoreForm, score: parseInt(e.target.value) })}
                       className="w-full px-6 py-4 bg-background border border-slate-100 rounded-2xl text-xl font-black text-primary outline-none focus:border-accent/30 transition-all"
                     />
                   </div>
@@ -161,17 +161,17 @@ export default function PerformanceLogsPage() {
                     <label className="text-[10px] font-black text-text-muted/40 uppercase tracking-widest">Round Date</label>
                     <div className="relative">
                       <Calendar className="absolute left-6 top-1/2 -translate-y-1/2 text-text-muted/30" size={18} />
-                      <input 
+                      <input
                         type="date"
                         required
                         max={new Date().toISOString().split('T')[0]}
                         value={newScoreForm.date}
-                        onChange={e => setNewScoreForm({...newScoreForm, date: e.target.value})}
+                        onChange={e => setNewScoreForm({ ...newScoreForm, date: e.target.value })}
                         className="w-full pl-14 pr-6 py-4 bg-background border border-slate-100 rounded-2xl font-bold text-primary outline-none focus:border-accent/30 transition-all"
                       />
                     </div>
                   </div>
-                  <button 
+                  <button
                     type="submit"
                     disabled={isSaving}
                     className="px-10 py-4 bg-accent text-primary rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-accent/5 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
@@ -222,10 +222,10 @@ export default function PerformanceLogsPage() {
                         <tr key={score.id} className="group hover:bg-slate-50/30 transition-colors">
                           <td className="px-10 py-6">
                             {editingId === score.id ? (
-                              <input 
+                              <input
                                 type="date"
                                 value={editForm.date}
-                                onChange={e => setEditForm({...editForm, date: e.target.value})}
+                                onChange={e => setEditForm({ ...editForm, date: e.target.value })}
                                 className="px-4 py-2 bg-background border border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-accent"
                               />
                             ) : (
@@ -239,10 +239,10 @@ export default function PerformanceLogsPage() {
                           </td>
                           <td className="px-10 py-6">
                             {editingId === score.id ? (
-                              <input 
+                              <input
                                 type="number"
                                 value={editForm.score}
-                                onChange={e => setEditForm({...editForm, score: parseInt(e.target.value)})}
+                                onChange={e => setEditForm({ ...editForm, score: parseInt(e.target.value) })}
                                 className="w-24 px-4 py-2 bg-background border border-slate-200 rounded-xl font-black text-primary outline-none focus:border-accent"
                               />
                             ) : (

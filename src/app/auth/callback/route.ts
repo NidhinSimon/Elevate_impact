@@ -11,8 +11,12 @@ export async function GET(request: Request) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
+      console.log("[AUTH CALLBACK] Success, redirecting to:", next);
       return NextResponse.redirect(`${origin}${next}`)
     }
+    console.error("[AUTH CALLBACK] Error exchanging code:", error.message);
+  } else {
+    console.warn("[AUTH CALLBACK] No code found in URL");
   }
 
   // return the user to an error page with instructions

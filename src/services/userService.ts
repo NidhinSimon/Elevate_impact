@@ -24,7 +24,6 @@ export const userService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    // Use a fresh query to bypass any client-side caching
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -32,7 +31,30 @@ export const userService = {
       .single();
 
     if (error) {
-      console.error('[USER SERVICE] Error fetching profile:', error);
+      // If error is "No rows found", try to create the profile manually
+      if (error.code === 'PGRST116') {
+        console.warn('[USER SERVICE] Profile missing for user, attempting creation:', user.id);
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            email: user.email,
+            full_name: user.user_metadata?.full_name || '',
+            subscription_status: 'inactive',
+            subscription_plan: 'none',
+            role: 'user'
+          })
+          .select()
+          .single();
+        
+        if (createError) {
+          console.error('[USER SERVICE] Critical: Failed to create missing profile:', createError.message, createError.code);
+          return null;
+        }
+        return newProfile;
+      }
+
+      console.error('[USER SERVICE] Error fetching profile:', error.message || error, error.code);
       return null;
     }
     return data;
@@ -42,6 +64,7 @@ export const userService = {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
+      .neq('role', 'admin')
       .order('joined_at', { ascending: false });
     
     if (error) {

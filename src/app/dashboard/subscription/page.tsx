@@ -6,12 +6,13 @@ import Footer from "@/components/Footer";
 import { useAuth } from "@/components/auth-provider";
 import { useState, useEffect } from "react";
 import { userService, UserProfile } from "@/services/userService";
-import { 
-  CreditCard, 
-  Calendar, 
-  Zap, 
-  ShieldCheck, 
-  ArrowUpRight, 
+import { formatDateSafe } from "@/lib/date";
+import {
+  CreditCard,
+  Calendar,
+  Zap,
+  ShieldCheck,
+  ArrowUpRight,
   RefreshCcw,
   AlertCircle,
   Loader2,
@@ -27,6 +28,8 @@ export default function SubscriptionManagementPage() {
   const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -55,32 +58,30 @@ export default function SubscriptionManagementPage() {
   const handleCancel = async () => {
     if (!profile) return;
     
-    const confirmCancel = window.confirm(
-      "Are you sure you want to cancel your subscription? Your access to draws will remain active until the end of the current billing cycle."
-    );
-
-    if (confirmCancel) {
-      const loadingToast = toast.loading("Processing cancellation...");
-      try {
-        const success = await userService.updateProfile(profile.id, {
-          subscription_status: 'cancelled'
-        });
-        if (success) {
-          setProfile(success);
-          toast.success("Subscription cancelled. Access remains active until " + 
-            (success.renewal_date ? new Date(success.renewal_date).toLocaleDateString() : 'end of period'), 
-            { id: loadingToast }
-          );
-        }
-      } catch (err) {
-        toast.error("Failed to cancel subscription. Please try again.", { id: loadingToast });
+    setCancelling(true);
+    const loadingToast = toast.loading("Processing cancellation...");
+    try {
+      const success = await userService.updateProfile(profile.id, {
+        subscription_status: 'cancelled'
+      });
+      if (success) {
+        setProfile(success);
+        toast.success("Subscription cancelled. Access remains active until " + 
+          formatDateSafe(success.renewal_date, "end of period"), 
+          { id: loadingToast }
+        );
+        setShowCancelModal(false);
       }
+    } catch (err) {
+      toast.error("Failed to cancel subscription. Please try again.", { id: loadingToast });
+    } finally {
+      setCancelling(false);
     }
   };
 
   const handleReactivate = async () => {
     if (!profile) return;
-    
+
     const loadingToast = toast.loading("Reactivating your impact...");
     try {
       const success = await userService.updateProfile(profile.id, {
@@ -112,11 +113,11 @@ export default function SubscriptionManagementPage() {
       <Navbar />
 
       <main className="pt-32 pb-24 max-w-[1440px] mx-auto px-10">
-        <div className="grid lg:grid-cols-[280px_1fr] gap-20">
+        <div className="grid lg:grid-cols-[280px_1fr] gap-16">
 
           <DashboardSidebar />
 
-          <div className="space-y-12">
+          <div className="bg-white rounded-[48px] p-12 shadow-2xl shadow-primary/5 space-y-12 border border-slate-100">
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div>
                 <h1 className="text-[44px] font-extrabold text-primary mb-2 tracking-tight">Subscription</h1>
@@ -139,7 +140,7 @@ export default function SubscriptionManagementPage() {
                 <p className="text-text-muted font-medium max-w-md mx-auto mb-10">
                   Join Elevated Impact today to start participating in draws and contributing to global initiatives.
                 </p>
-                <Link 
+                <Link
                   href="/pricing"
                   className="inline-flex items-center gap-2 px-10 py-5 bg-primary text-white rounded-2xl font-black text-sm hover:shadow-2xl hover:shadow-indigo-900/20 transition-all"
                 >
@@ -152,9 +153,9 @@ export default function SubscriptionManagementPage() {
                   {/* Current Plan Card */}
                   <section className="bg-white rounded-[48px] p-12 shadow-sm border border-slate-100 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
-                       <Zap size={120} className="text-primary" fill="currentColor" />
+                      <Zap size={120} className="text-primary" fill="currentColor" />
                     </div>
-                    
+
                     <div className="relative z-10">
                       <div className="flex items-center gap-3 mb-10">
                         <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-primary">
@@ -162,140 +163,140 @@ export default function SubscriptionManagementPage() {
                         </div>
                         <span className="text-xs font-black uppercase tracking-[0.3em] text-primary">Current Tier</span>
                       </div>
-  
+
                       <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
-                         <div>
-                            <h2 className="text-5xl font-black text-primary tracking-tighter mb-2">
-                               {profile?.subscription_plan?.charAt(0).toUpperCase() + profile?.subscription_plan?.slice(1) + ' Impact'}
-                            </h2>
-                            <p className="text-text-muted font-bold flex items-center gap-2">
-                               <Calendar size={16} /> 
-                               {isCancelled ? 'Terminates on ' : 'Next Invoice on '} 
-                               {profile?.renewal_date ? new Date(profile.renewal_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'N/A'}
-                            </p>
-                         </div>
-                         <div className="text-right">
-                            <p className="text-4xl font-black text-primary tracking-tighter">
-                              ${profile?.subscription_plan === 'elite' ? '99' : profile?.subscription_plan === 'gold' ? '49' : '19'}.00
-                            </p>
-                            <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mt-1">Per {profile?.subscription_period}</p>
-                         </div>
+                        <div>
+                          <h2 className="text-5xl font-black text-primary tracking-tighter mb-2">
+                            {profile?.subscription_plan?.charAt(0).toUpperCase() + profile?.subscription_plan?.slice(1) + ' Impact'}
+                          </h2>
+                          <p className="text-text-muted font-bold flex items-center gap-2">
+                            <Calendar size={16} />
+                            {isCancelled ? 'Terminates on ' : 'Next Invoice on '}
+                            {formatDateSafe(profile?.renewal_date, "N/A", 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-4xl font-black text-primary tracking-tighter">
+                            ${profile?.subscription_plan === 'elite' ? '99' : profile?.subscription_plan === 'gold' ? '49' : '19'}.00
+                          </p>
+                          <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mt-1">Per {profile?.subscription_period}</p>
+                        </div>
                       </div>
-  
+
                       <div className="flex flex-wrap gap-4 pt-8 border-t border-slate-50">
-                         <Link 
+                        <Link
                           href="/pricing"
                           className="px-8 py-4 bg-primary text-white rounded-2xl font-black text-sm hover:shadow-2xl hover:shadow-indigo-900/20 transition-all flex items-center gap-2"
-                         >
-                            Modify Plan <ArrowUpRight size={18} />
-                         </Link>
-                         
-                         {isActive && (
+                        >
+                          Modify Plan <ArrowUpRight size={18} />
+                        </Link>
+
+                        {isActive && (
                            <button 
-                            onClick={handleCancel}
+                            onClick={() => setShowCancelModal(true)}
                             className="px-8 py-4 bg-white text-rose-500 border border-rose-100 rounded-2xl font-black text-sm hover:bg-rose-50 transition-all flex items-center gap-2"
                            >
                               <XCircle size={18} /> Cancel Impact
                            </button>
                          )}
-                         
-                         {isCancelled && (
-                           <button 
+
+                        {isCancelled && (
+                          <button
                             onClick={handleReactivate}
                             className="px-8 py-4 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-2xl font-black text-sm hover:bg-emerald-100 transition-all flex items-center gap-2"
-                           >
-                              <RefreshCcw size={18} /> Resume Impact
-                           </button>
-                         )}
+                          >
+                            <RefreshCcw size={18} /> Resume Impact
+                          </button>
+                        )}
                       </div>
                     </div>
                   </section>
-  
+
                   {/* Billing Information */}
                   <section className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100">
-                     <div className="flex items-center justify-between mb-8">
-                        <h3 className="text-xl font-black text-primary">Billing History</h3>
-                        <div className="px-3 py-1 bg-indigo-50 rounded-full text-[10px] font-black text-primary uppercase tracking-widest">
-                           Latest Invoices
-                        </div>
-                     </div>
-                     <div className="space-y-4">
-                        {/* Dynamic Billing History Generation */}
-                        {[0, 1, 2].map(i => {
-                          const date = new Date();
-                          date.setMonth(date.getMonth() - i);
-                          return (
-                            <div key={i} className="flex items-center justify-between p-6 rounded-3xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100 group">
-                               <div className="flex items-center gap-4">
-                                  <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-white transition-colors">
-                                     <CreditCard size={20} />
-                                  </div>
-                                  <div>
-                                     <p className="font-bold text-primary">Impact Contribution #{842 - i}</p>
-                                     <p className="text-xs text-text-muted font-medium">{date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                    <div className="flex items-center justify-between mb-8">
+                      <h3 className="text-xl font-black text-primary">Billing History</h3>
+                      <div className="px-3 py-1 bg-indigo-50 rounded-full text-[10px] font-black text-primary uppercase tracking-widest">
+                        Latest Invoices
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      {/* Dynamic Billing History Generation */}
+                      {[0, 1, 2].map(i => {
+                        const date = new Date();
+                        date.setMonth(date.getMonth() - i);
+                        return (
+                          <div key={i} className="flex items-center justify-between p-6 rounded-3xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100 group">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-white transition-colors">
+                                <CreditCard size={20} />
+                              </div>
+                              <div>
+                                <p className="font-bold text-primary">Impact Contribution #{842 - i}</p>
+                                <p className="text-xs text-text-muted font-medium">{date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
 
-                                  </div>
-                               </div>
-                               <div className="text-right flex items-center gap-6">
-                                  <span className="font-black text-primary">${profile?.subscription_plan === 'elite' ? '99' : profile?.subscription_plan === 'gold' ? '49' : '19'}.00</span>
-                                  <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1">
-                                     <CheckCircle2 size={12} /> Paid
-                                  </span>
-                               </div>
+                              </div>
                             </div>
-                          );
-                        })}
-                     </div>
+                            <div className="text-right flex items-center gap-6">
+                              <span className="font-black text-primary">${profile?.subscription_plan === 'elite' ? '99' : profile?.subscription_plan === 'gold' ? '49' : '19'}.00</span>
+                              <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1">
+                                <CheckCircle2 size={12} /> Paid
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </section>
                 </div>
-  
+
                 {/* Sidebar Info */}
                 <aside className="space-y-8">
-                   <div className="p-8 rounded-[40px] bg-[#0F0A4A] text-white relative overflow-hidden group shadow-2xl shadow-indigo-900/20">
-                      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-all pointer-events-none">
-                         <ShieldCheck size={64} />
+                  <div className="p-8 rounded-[40px] bg-[#0F0A4A] text-white relative overflow-hidden group shadow-2xl shadow-indigo-900/20">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-all pointer-events-none">
+                      <ShieldCheck size={64} />
+                    </div>
+                    <h4 className="text-lg font-black mb-4">Payment Security</h4>
+                    <p className="text-indigo-200 text-sm leading-relaxed font-medium mb-8">
+                      Your subscription is managed via Stripe. Billing occurs automatically every month to ensure your draw entries remain active.
+                    </p>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3 text-emerald-400">
+                        <CheckCircle2 size={16} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">PCI Level 1 Secure</span>
                       </div>
-                      <h4 className="text-lg font-black mb-4">Payment Security</h4>
-                      <p className="text-indigo-200 text-sm leading-relaxed font-medium mb-8">
-                         Your subscription is managed via Stripe. Billing occurs automatically every month to ensure your draw entries remain active.
-                      </p>
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-3 text-emerald-400">
-                           <CheckCircle2 size={16} />
-                           <span className="text-[10px] font-black uppercase tracking-widest">PCI Level 1 Secure</span>
-                        </div>
-                        <div className="flex items-center gap-3 text-indigo-300">
-                           <Lock size={16} />
-                           <span className="text-[10px] font-black uppercase tracking-widest">256-bit Encryption</span>
-                        </div>
+                      <div className="flex items-center gap-3 text-indigo-300">
+                        <Lock size={16} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">256-bit Encryption</span>
                       </div>
-                   </div>
-  
-                   {isCancelled && (
-                     <div className="p-8 rounded-[40px] bg-rose-50 border border-rose-100">
-                        <div className="flex items-center gap-3 mb-4 text-rose-600">
-                           <AlertCircle size={20} />
-                           <h4 className="font-black text-xs uppercase tracking-widest">Termination Notice</h4>
-                        </div>
-                        <p className="text-rose-900/60 text-xs font-bold leading-relaxed">
-                          Your subscription is set to expire. After {profile?.renewal_date ? new Date(profile.renewal_date).toLocaleDateString() : 'the period'}, you will lose access to premium draws and impact metrics.
-                        </p>
-                     </div>
-                   )}
+                    </div>
+                  </div>
 
-                   <div className="p-8 rounded-[40px] bg-slate-50 border border-slate-100">
-                      <h4 className="font-black text-primary text-xs uppercase tracking-widest mb-6">Subscription FAQ</h4>
-                      <div className="space-y-6">
-                        <div>
-                          <p className="text-xs font-black text-primary mb-1">Can I upgrade anytime?</p>
-                          <p className="text-[11px] text-text-muted font-medium leading-relaxed">Yes, upgrades take effect immediately and are prorated.</p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-black text-primary mb-1">When is my next draw?</p>
-                          <p className="text-[11px] text-text-muted font-medium leading-relaxed">Active subscribers are automatically entered into every weekly draw.</p>
-                        </div>
+                  {isCancelled && (
+                    <div className="p-8 rounded-[40px] bg-rose-50 border border-rose-100">
+                      <div className="flex items-center gap-3 mb-4 text-rose-600">
+                        <AlertCircle size={20} />
+                        <h4 className="font-black text-xs uppercase tracking-widest">Termination Notice</h4>
                       </div>
-                   </div>
+                      <p className="text-rose-900/60 text-xs font-bold leading-relaxed">
+                        Your subscription is set to expire. After {formatDateSafe(profile?.renewal_date, "the period")}, you will lose access to premium draws and impact metrics.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="p-8 rounded-[40px] bg-slate-50 border border-slate-100">
+                    <h4 className="font-black text-primary text-xs uppercase tracking-widest mb-6">Subscription FAQ</h4>
+                    <div className="space-y-6">
+                      <div>
+                        <p className="text-xs font-black text-primary mb-1">Can I upgrade anytime?</p>
+                        <p className="text-[11px] text-text-muted font-medium leading-relaxed">Yes, upgrades take effect immediately and are prorated.</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-black text-primary mb-1">When is my next draw?</p>
+                        <p className="text-[11px] text-text-muted font-medium leading-relaxed">Active subscribers are automatically entered into every weekly draw.</p>
+                      </div>
+                    </div>
+                  </div>
                 </aside>
               </div>
             )}
@@ -304,6 +305,39 @@ export default function SubscriptionManagementPage() {
       </main>
 
       <Footer />
+
+      {/* Cancellation Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[#0F0A4A]/40 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white rounded-[48px] p-12 max-w-lg w-full shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-300">
+            <div className="w-20 h-20 bg-rose-50 rounded-3xl flex items-center justify-center text-rose-500 mb-8">
+               <AlertCircle size={32} />
+            </div>
+            
+            <h2 className="text-3xl font-black text-primary mb-4">Cancel your impact?</h2>
+            <p className="text-text-muted font-medium leading-relaxed mb-10">
+              You'll lose access to premium draws, advanced performance metrics, and impact history. 
+              Your current access will remain active until <span className="text-primary font-bold">{formatDateSafe(profile?.renewal_date, "the end of the cycle")}</span>.
+            </p>
+            
+            <div className="flex flex-col gap-4">
+              <button 
+                onClick={handleCancel}
+                disabled={cancelling}
+                className="w-full py-5 bg-rose-500 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-rose-600 transition-all disabled:opacity-50"
+              >
+                {cancelling ? <Loader2 className="animate-spin mx-auto" /> : "Confirm Cancellation"}
+              </button>
+              <button 
+                onClick={() => setShowCancelModal(false)}
+                className="w-full py-5 bg-slate-50 text-primary rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-100 transition-all"
+              >
+                Keep My Membership
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

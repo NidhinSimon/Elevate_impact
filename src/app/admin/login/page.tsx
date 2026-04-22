@@ -1,36 +1,102 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Zap, Loader2, ShieldCheck, Lock } from "lucide-react";
 import Link from "next/link";
+import { createClient } from "@/utils/supabase/client";
+
+const supabase = createClient();
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState("");
   const router = useRouter();
+
+  // Senior Dev Practice: Check for existing admin session on mount to prevent redundant login
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", session.user.id)
+            .single();
+          
+          if (profile?.role === "admin") {
+            console.log("[ADMIN LOGIN] Active admin session detected, redirecting...");
+            router.replace("/admin");
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("[ADMIN LOGIN] Session check failed:", err);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    checkSession();
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    // Static Admin Credentials
-    const ADMIN_EMAIL = "admin@elevatedimpact.com";
-    const ADMIN_PASS = "admin123";
+    const { data, error: loginError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-    setTimeout(() => {
-      if (email === ADMIN_EMAIL && password === ADMIN_PASS) {
-        localStorage.setItem("admin_session", "true");
-        router.push("/admin");
-      } else {
-        setError("Invalid admin credentials. Please try again.");
-      }
+    if (loginError || !data.user) {
+      console.error("[ADMIN LOGIN] Auth error:", loginError?.message);
+      setError("Invalid admin credentials. Please try again.");
       setLoading(false);
-    }, 800);
+      return;
+    }
+
+    console.log("[ADMIN LOGIN] User authenticated, checking role for:", data.user.id);
+
+    // Verify role explicitly from the database (Authoritative check)
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", data.user.id)
+      .single();
+
+    if (profileError) {
+      console.error("[ADMIN LOGIN] Profile fetch error:", profileError.message, profileError.code);
+      await supabase.auth.signOut();
+      setError("Error verifying admin status. Please contact support.");
+      setLoading(false);
+      return;
+    }
+
+    if (profile?.role !== "admin") {
+      console.warn("[ADMIN LOGIN] Unauthorized access attempt by:", email, "Role:", profile?.role);
+      await supabase.auth.signOut();
+      setError("This account does not have admin access.");
+      setLoading(false);
+      return;
+    }
+
+    console.log("[ADMIN LOGIN] Access authorized, redirecting...");
+    router.push("/admin");
+    setLoading(false);
   };
+
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-[#F4F7FF] flex items-center justify-center">
+        <Loader2 size={48} className="animate-spin text-[#1A146B] opacity-20" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F4F7FF] flex items-center justify-center p-6">
